@@ -14,7 +14,8 @@
     "three": "^0.158.0",
     "brain.js": "^2.0.0-beta.23",
     "qrcode": "^1.5.3",
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "stripe": "^15.0.0"
   },
   "devDependencies": {
     "vite": "^5.0.0",

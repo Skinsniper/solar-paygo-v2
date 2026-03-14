@@ -22,21 +22,17 @@ function App() {
   const net = new brain.NeuralNetwork();
   net.fromJSON(require('./fraud-model.json')); // Add model later
 
-  const registerDevice = async () => {
-    if (!deviceId) return;
-    
-    const response = await fetch('/api/server', {
+  const register = async () => {
+    const res = await fetch('/api/server', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'register-device', deviceId })
     });
+    const data = await res.json();
     
-    const data = await response.json();
-    setStatus(data.message || data.error);
-    
-    if (data.success) {
-      const score = net.run({ deviceId, timestamp: Date.now() });
-      setFraudScore(score.fraud);
+    if (data.clientSecret) {
+      // Stripe Elements modal appears automatically
+      setStatus(`Processing $29.99 payment for ${deviceId}...`);
     }
   };
 

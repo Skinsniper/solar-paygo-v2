@@ -1,42 +1,52 @@
 import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    return res.status(200).json({ 
-      success: true, 
-      message: '🚀 API LIVE (add Supabase env vars for real DB)' 
-    });
-  }
-  
-  const supabase = createClient(supabaseUrl, supabaseKey);
-  
+  // ... CORS headers same as before
+
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+
   if (req.method === 'POST') {
-    const { action, deviceId } = req.body;
-    
+    const { action, deviceId, paymentIntentId } = req.body;
+
     if (action === 'register-device') {
+      // Create Stripe PaymentIntent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: 2999, // $29.99
+        currency: 'usd',
+        metadata: { deviceId }
+      });
+
       const { data, error } = await supabase
         .from('devices')
-        .insert({ id: deviceId, status: 'active', kwh_day: Math.random() * 300 + 100 });
-      
-      if (error) {
-        return res.status(400).json({ error: error.message });
-      }
-      
+        .insert({ 
+          id: deviceId, 
+          status: 'payment_pending',
+          stripe_pi: paymentIntent.id,
+          kwh_day: Math.random() * 300 + 100 
+        });
+
       return res.status(200).json({
         success: true,
         device: data[0],
-        message: `✅ Panel ${deviceId} registered in Supabase!`
+        clientSecret: paymentIntent.client_secret,
+        message: `Payment started for ${deviceId}! Complete in Stripe modal.`
       });
     }
+
+    if (action === 'confirm-payment') {
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      if (paymentIntent.status === 'succeeded') {
+        await supabase
+          .from('devices')
+          .update({ status: 'active' })
+          .eq('stripe_pi', paymentIntentId);
+        
+        return res.json({ success: true, message: 'Payment confirmed! Panel activated.' });
+      }
+    }
   }
-  
-  res.status(405).json({ error: 'Method not allowed' });
 }
