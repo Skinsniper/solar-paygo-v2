@@ -1,11 +1,6 @@
-import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { 
-  apiVersion: '2024-06-20' 
-});
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -14,47 +9,35 @@ export default async function handler(req, res) {
   }
 
   res.setHeader('Access-Control-Allow-Origin', '*');
-  
-  try {
-    const supabase = createClient(
-      process.env.SUPABASE_URL || '',
-      process.env.SUPABASE_ANON_KEY || ''
-    );
 
-    if (req.method === 'POST') {
-      const { action, deviceId } = req.body;
+  if (req.method === 'POST') {
+    const { action, deviceId, currency, amount } = req.body;
 
-      if (action === 'register-device') {
-        // Create Stripe PaymentIntent
+    if (action === 'register-device') {
+      try {
+        // 1. Create the PaymentIntent
         const paymentIntent = await stripe.paymentIntents.create({
-          amount: 2999, // $29.99
-          currency: 'usd',
+          amount: amount, // Already in cents from frontend
+          currency: currency.toLowerCase(),
+          metadata: {
+            device_id: deviceId,
+            integration_check: 'solar_paygo_v2',
+          },
           automatic_payment_methods: { enabled: true },
-          metadata: { deviceId }
         });
 
-        // Save to Supabase
-        const { data, error } = await supabase
-          .from('devices')
-          .insert({
-            id: deviceId,
-            status: 'payment_pending',
-            stripe_pi: paymentIntent.id,
-            kwh_day: Math.floor(Math.random() * 300 + 100)
-          });
-
-        return res.status(200).json({
-          success: true,
+        // 2. Send the clientSecret back to the frontend
+        res.json({
           clientSecret: paymentIntent.client_secret,
-          deviceId: deviceId,
-          message: `Payment created! Complete checkout for ${deviceId}`
         });
+      } catch (error) {
+        console.error('Stripe Error:', error.message);
+        res.status(500).json({ message: error.message });
       }
+    } else {
+      res.status(400).json({ message: 'Unknown action' });
     }
-
-    res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+  } else {
+    res.status(405).json({ message: 'Method not allowed' });
   }
-}
+};

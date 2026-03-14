@@ -29,183 +29,183 @@ function App() {
         const { error } = await stripe.confirmCardPayment(data.clientSecret);
         
         if (!error) {
-          setStatus('✅ Payment complete! Device activated. Check Supabase dashboard.');
-        } else {
-          setStatus('❌ Payment failed: ' + error.message);
-        }
-      } else {
-        setStatus(data.message || 'Error: ' + JSON.stringify(data));
-      }
-    } catch (err) {
-      setStatus('Network error: ' + err.message);
-    }
-    
-    setLoading(false);
-  };
+          import { useState, useEffect, useRef } from 'react';
+          import { loadStripe } from '@stripe/stripe-js';
 
-  return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      fontFamily: 'system-ui, sans-serif',
-      color: 'white',
-      textAlign: 'center',
-      padding: '20px'
-    }}>
-      <div style={{ maxWidth: '500px', width: '100%' }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '10px' }}>
-          🌞 SolarPayGo AI
-        </h1>
-        <p style={{ fontSize: '1.2rem', marginBottom: '30px', opacity: 0.9 }}>
-          Pay-as-you-go solar energy • $29.99/month per panel
-        </p>
+          // Initialize Stripe outside the component to prevent re-renders
+          const stripePromise = loadStripe('pk_test_51...YOUR_PUBLIC_KEY'); 
+
+          function App() {
+            const [deviceId, setDeviceId] = useState('');
+            const [status, setStatus] = useState('🌞 SolarPayGo - Register Device');
+            const [loading, setLoading] = useState(false);
+            const [currency, setCurrency] = useState('USD');
+            const [price, setPrice] = useState(29.99);
+  
+            const canvasRef = useRef();
+
+            const currencies = [
+              { code: 'USD', symbol: '$', price: 29.99 },
+              { code: 'EUR', symbol: '€', price: 27.99 },
+              { code: 'GBP', symbol: '£', price: 24.99 },
+              { code: 'INR', symbol: '₹', price: 2499 },
+              { code: 'BRL', symbol: 'R$', price: 159.99 }
+            ];
+
+            // 3D Solar Farm Animation
+            useEffect(() => {
+              if (!window.THREE || !canvasRef.current) return;
+
+              const THREE = window.THREE;
+              const scene = new THREE.Scene();
+              const camera = new THREE.PerspectiveCamera(75, 400 / 300, 0.1, 1000);
+              const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true });
+              renderer.setSize(400, 300);
+
+              const panelGeometry = new THREE.BoxGeometry(2, 0.1, 1);
+              const panelMaterial = new THREE.MeshPhongMaterial({ color: 0x4a7c59 });
+              const panels = [];
+
+              for (let i = 0; i < 12; i++) {
+                const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+                panel.position.set((i % 4 - 1.5) * 3, 0, Math.floor(i / 4 - 1.5) * 3);
+                panel.rotation.x = -0.1;
+                scene.add(panel);
+                panels.push(panel);
+              }
+
+              const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+              scene.add(ambientLight);
+              const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+              sunLight.position.set(10, 10, 5);
+              scene.add(sunLight);
+
+              camera.position.z = 8;
+              camera.position.y = 2;
+
+              let time = 0;
+              const animate = () => {
+                requestAnimationFrame(animate);
+                time += 0.01;
+                panels.forEach((panel, i) => {
+                  panel.rotation.y = Math.sin(time + i * 0.2) * 0.05;
+                  panel.position.y = Math.sin(time * 2 + i) * 0.02;
+                });
+                renderer.render(scene, camera);
+              };
+              animate();
+
+              return () => renderer.dispose();
+            }, []);
+
+            const handleRegistration = async () => {
+              setLoading(true);
+              setStatus('🔄 Contacting Secure Server...');
+    
+              try {
+                const response = await fetch('/api/server', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    action: 'register-device', 
+                    deviceId: deviceId,
+                    currency: currency,
+                    amount: price * 100 
+                  })
+                });
+      
+                const data = await response.json();
+      
+                if (data.clientSecret) {
+                  const stripe = await stripePromise;
+                  const { error } = await stripe.confirmCardPayment(data.clientSecret);
         
-        <div style={{ marginBottom: '20px' }}>
-          <input
-            value={deviceId}
-            onChange={(e) => setDeviceId(e.target.value)}
-            placeholder="Enter QR code (SOLAR-XXXX) or auto-generate"
-            style={{
-              width: '70%',
-              padding: '15px',
-              fontSize: '18px',
-              border: 'none',
-              borderRadius: '12px',
-              marginRight: '10px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-            }}
-            disabled={loading}
-          />
-          <button 
-            onClick={registerDevice}
-            disabled={loading || !deviceId}
-            style={{
-              padding: '15px 30px',
-              fontSize: '18px',
-              background: loading ? '#ccc' : '#00ff88',
-              color: 'black',
-              border: 'none',
-              borderRadius: '12px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              import { useState, useEffect, useRef } from 'react';
-              import { loadStripe } from '@stripe/stripe-js';
-
-              const stripePromise = loadStripe('pk_test_51...YOUR_PUBLIC_KEY'); // Add your Stripe public key
-
-              function App() {
-                const [devices, setDevices] = useState([]);
-                const [deviceId, setDeviceId] = useState('');
-                const [loading, setLoading] = useState(false);
-                const [paymentIntent, setPaymentIntent] = useState(null);
-                const [currency, setCurrency] = useState('USD');
-                const [price, setPrice] = useState(29.99);
-                const canvasRef = useRef();
-                const sceneRef = useRef();
-
-                // Voice commands
-                useEffect(() => {
-                  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                  recognition.continuous = true;
-                  recognition.interimResults = false;
-                  recognition.lang = 'en-US';
-    
-                  recognition.onresult = (event) => {
-                    const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
-                    if (command.includes('register') || command.includes('activate')) {
-                      const qrText = canvasRef.current?.toDataURL();
-                      if (qrText) navigator.clipboard.writeText(qrText);
-                      alert('QR code copied! Paste into device or say device ID');
-                    }
-                  };
-                  recognition.start();
-                }, []);
-
-                // 3D Solar Farm (Three.js CDN)
-                useEffect(() => {
-                  if (!window.THREE || !canvasRef.current) return;
-    
-                  const scene = new window.THREE.Scene();
-                  const camera = new window.THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                  const renderer = new window.THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true });
-                  renderer.setSize(400, 300);
-    
-                  sceneRef.current = scene;
-    
-                  // Solar panels
-                  const panelGeometry = new window.THREE.BoxGeometry(2, 0.1, 1);
-                  const panelMaterial = new window.THREE.MeshPhongMaterial({ color: 0x4a7c59 });
-                  const panels = [];
-    
-                  for (let i = 0; i < 12; i++) {
-                    const panel = new window.THREE.Mesh(panelGeometry, panelMaterial);
-                    panel.position.set(
-                      (i % 4 - 1.5) * 3,
-                      0,
-                      Math.floor(i / 4 - 1.5) * 3
-                    );
-                    panel.rotation.x = -0.1;
-                    scene.add(panel);
-                    panels.push(panel);
+                  if (!error) {
+                    setStatus('✅ Payment complete! Device activated.');
+                  } else {
+                    setStatus('❌ Payment failed: ' + error.message);
                   }
-    
-                  // Lighting
-                  const ambientLight = new window.THREE.AmbientLight(0x404040, 0.6);
-                  scene.add(ambientLight);
-                  const sunLight = new window.THREE.DirectionalLight(0xffffff, 1);
-                  sunLight.position.set(10, 10, 5);
-                  scene.add(sunLight);
-    
-                  camera.position.z = 8;
-                  camera.position.y = 2;
-    
-                  let time = 0;
-                  const animate = () => {
-                    requestAnimationFrame(animate);
-                    time += 0.01;
-                    panels.forEach((panel, i) => {
-                      panel.rotation.y = Math.sin(time + i * 0.2) * 0.05;
-                      panel.position.y = Math.sin(time * 2 + i) * 0.02;
-                    });
-                    renderer.render(scene, camera);
-                  };
-                  animate();
-    
-                  return () => renderer.dispose();
-                }, []);
+                } else {
+                  setStatus(data.message || 'Error processing request');
+                }
+              } catch (err) {
+                setStatus('Network error: ' + err.message);
+              }
+              setLoading(false);
+            };
 
-                const createPaymentIntent = async () => {
-                  setLoading(true);
-                  try {
-                    const res = await fetch('/api/server', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ deviceId, currency, amount: price * 100 })
-                    });
-                    const data = await res.json();
-                    setPaymentIntent(data.clientSecret);
-                  } catch (e) {
-                    alert('Payment setup failed: ' + e.message);
-                  }
-                  setLoading(false);
-                };
+            return (
+              <div style={{ 
+                minHeight: '100vh', 
+                background: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)',
+                color: 'white',
+                fontFamily: 'system-ui, sans-serif',
+                padding: '20px',
+                textAlign: 'center'
+              }}>
+                <header>
+                  <h1 style={{ fontSize: '3rem', color: '#ffd700', marginBottom: '0' }}>🌞 SolarPayGo AI</h1>
+                  <p style={{ opacity: 0.8 }}>Pay-as-you-go Solar Energy • AI Fraud Protection</p>
+                </header>
 
-                const handlePayment = async (e) => {
-                  e.preventDefault();
-                  if (!deviceId) {
-                    alert('Enter device ID first!');
-                    return;
-                  }
-                  await createPaymentIntent();
-                };
+                <div style={{ margin: '20px auto' }}>
+                  <canvas ref={canvasRef} style={{ borderRadius: '20px', maxWidth: '100%' }} />
+                </div>
 
-                const currencies = [
-                  { code: 'USD', symbol: '$', price: 29.99 },
-                  { code: 'EUR', symbol: '€', price: 27.99 },
-                  { code: 'GBP', symbol: '£', price: 24.99 },
+                <div style={{ 
+                  background: 'rgba(255,255,255,0.1)', 
+                  padding: '30px', 
+                  borderRadius: '20px', 
+                  maxWidth: '450px', 
+                  margin: '0 auto',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <h2 style={{ fontSize: '1.5rem' }}>{status}</h2>
+        
+                  <select 
+                    value={currency} 
+                    onChange={(e) => {
+                      const selected = currencies.find(c => c.code === e.target.value);
+                      setCurrency(selected.code);
+                      setPrice(selected.price);
+                    }}
+                    style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px' }}
+                  >
+                    {currencies.map(c => (
+                      <option key={c.code} value={c.code}>{c.symbol}{c.price} ({c.code})</option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="text"
+                    placeholder="Enter Device ID (e.g. SOLAR-123)"
+                    value={deviceId}
+                    onChange={(e) => setDeviceId(e.target.value)}
+                    style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', boxSizing: 'border-box' }}
+                  />
+
+                  <button
+                    onClick={handleRegistration}
+                    disabled={loading || !deviceId}
+                    style={{
+                      width: '100%',
+                      padding: '15px',
+                      background: loading ? '#666' : '#ffd700',
+                      color: 'black',
+                      fontWeight: 'bold',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {loading ? 'Processing...' : 'Activate Now'}
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          export default App;
                   { code: 'INR', symbol: '₹', price: 2499 },
                   { code: 'BRL', symbol: 'R$', price: 159.99 }
                 ];
