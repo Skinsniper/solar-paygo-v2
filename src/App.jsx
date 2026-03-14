@@ -109,15 +109,56 @@ function App() {
 
     return (
       <div style={{ minHeight: '100vh', background: '#0f2027', color: 'white', fontFamily: 'sans-serif', textAlign: 'center', padding: '20px' }}>
-        <h1>🌞 SolarPayGo AI</h1>
-        <canvas ref={canvasRef} style={{ maxWidth: '100%' }} />
-      
-        <div style={{ background: 'rgba(255,255,255,0.1)', padding: '20px', borderRadius: '15px', maxWidth: '400px', margin: '20px auto' }}>
-          <h3>{status}</h3>
+        <header>
+          <h1 style={{ fontSize: '3rem', color: '#ffd700', margin: '10px 0' }}>🌞 SolarPayGo AI</h1>
+          <p style={{ opacity: 0.8, marginBottom: '30px' }}>Global Pay-as-you-go Energy</p>
+        </header>
+
+        <div style={{ margin: '20px auto' }}>
+          <canvas ref={canvasRef} style={{ borderRadius: '20px', maxWidth: '100%', height: '300px' }} />
+        </div>
+
+        <div style={{ 
+          background: 'rgba(255,255,255,0.1)', 
+          padding: '30px', 
+          borderRadius: '20px', 
+          maxWidth: '450px', 
+          margin: '0 auto',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <h2>{status}</h2>
           <p>Local Price: {symbol}{price}</p>
-          <input 
-            placeholder="Device ID" 
-            value={deviceId} 
+          
+          <input
+            type="text"
+            placeholder="Enter Device ID (SOLAR-XXXX)"
+            value={deviceId}
+            onChange={(e) => setDeviceId(e.target.value)}
+            style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: 'none', boxSizing: 'border-box' }}
+          />
+
+          <button
+            onClick={handlePayment}
+            disabled={loading || !deviceId}
+            style={{
+              width: '100%',
+              padding: '15px',
+              background: loading ? '#666' : '#ffd700',
+              color: 'black',
+              fontWeight: 'bold',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Processing...' : `Activate for ${symbol}${price}`}
+          </button>
+        </div>
+      </div>
+    );
+} // This closes the App function - Make sure this exists!
+
+export default App; // This must be the very last line
             onChange={e => setDeviceId(e.target.value)}
             style={{ width: '80%', padding: '10px', borderRadius: '5px', border: 'none' }}
           />
