@@ -1,43 +1,26 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-module.exports = async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    return res.status(200).end();
+export default async function handler(req, res) {
+  // Handle Geo-Detection
+  if (req.query && req.query.action === 'get-geo') {
+    const country = req.headers['x-vercel-ip-country'] || 'US';
+    return res.status(200).json({ country });
   }
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-
+  // Handle Stripe Payment
   if (req.method === 'POST') {
-    const { action, deviceId, currency, amount } = req.body;
-
+    const { action, amount, currency, deviceId } = req.body;
     if (action === 'register-device') {
       try {
-        // 1. Create the PaymentIntent
         const paymentIntent = await stripe.paymentIntents.create({
-          amount: amount, // Already in cents from frontend
-          currency: currency.toLowerCase(),
-          metadata: {
-            device_id: deviceId,
-            integration_check: 'solar_paygo_v2',
-          },
-          automatic_payment_methods: { enabled: true },
+          amount: amount,
+          currency: currency,
+          metadata: { deviceId },
         });
-
-        // 2. Send the clientSecret back to the frontend
-        res.json({
-          clientSecret: paymentIntent.client_secret,
-        });
-      } catch (error) {
-        console.error('Stripe Error:', error.message);
-        res.status(500).json({ message: error.message });
+        res.status(200).json({ clientSecret: paymentIntent.client_secret });
+      } catch (e) {
+        res.status(400).json({ message: e.message });
       }
-    } else {
-      res.status(400).json({ message: 'Unknown action' });
     }
-  } else {
-    res.status(405).json({ message: 'Method not allowed' });
   }
-};
+}
