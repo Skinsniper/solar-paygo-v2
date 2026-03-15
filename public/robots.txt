@@ -1,3 +1,1 @@
-User-agent: *
-Allow: /
-Sitemap: https://solar-paygo.vercel.app/sitemap.xml
+User-agent: *&#10;Allow: /&#10;Sitemap: https://solar-paygo.vercel.app/sitemap.xml
